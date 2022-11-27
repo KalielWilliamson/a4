@@ -22,10 +22,9 @@ while len(states) < num_possible_states:
 for state in states:
     x, y = state[0], state[1]
     angle = math.atan2(y, x)
-    expected_reward = -(angle**2 + 0.1*state[2]**2)
-    expected_reward += 16.2736044 # making the reward positive for every step taken
+    expected_reward = -(angle ** 2 + 0.1 * state[2] ** 2)
+    expected_reward += 16.2736044  # making the reward positive for every step taken
     possible_rewards.append(expected_reward)
-
 
 possible_states = np.asarray(list(states))
 possible_actions = np.arange(-2.0, 2.0, 0.01)
@@ -53,19 +52,26 @@ def q_learn(max_iteration, max_steps, learning_rate, gamma, possible_states, pos
         reward_sum = 0.0
 
         for _ in range(max_steps):
-            action_list = Q[s_idx, :]
-            fuzzy_actions = action_list + np.random.randn(1, len(possible_actions)) * (1. / (i + 1))
-            selected_action = np.argmax(fuzzy_actions)
+            # exploit vs explore to find action
+            if np.random.random() < 1.0 / (i + 1):
+                # get index of randomly selected action
+                action_idx = np.random.randint(0, len(possible_actions))
+            else:
+                action_idx = np.argmax(Q[s_idx, :])
+
+            action = possible_actions[action_idx]
+
+            # take action, observe new state and reward
             env.state = state
-            new_state, reward, done, _ = env.step(possible_states[selected_action])
+            new_state, reward, done, _ = env.step([action])
 
             # making the reward positive for every step taken
             # -16.27 is the worst reward for the pendulum environment
             reward += 16.2736044
 
             next_sidx, next_state = descretize_state(new_state, possible_states)
-            Q[s_idx, selected_action] = Q[s_idx, selected_action] + learning_rate * (
-                    reward + gamma * np.max(Q[next_sidx, :]) - Q[s_idx, selected_action])
+            Q[s_idx, action_idx] = Q[s_idx, action_idx] + learning_rate * (
+                    reward + gamma * np.max(Q[next_sidx, :]) - Q[s_idx, action_idx])
             s_idx = next_sidx
             reward_sum += reward
             if done:
@@ -81,11 +87,12 @@ def test_policy(env, Q, gamma, n=100):
         total_reward = 0
         step_idx = 0
         while step_idx < 10000:
-            action_list = Q[step_idx, :]
-            selected_action = np.argmax(action_list)
+            action = np.argmax(Q[state_index, :])
             env.state = state
-            new_state, reward, done, _ = env.step(possible_states[selected_action])
+            new_state, reward, done, _ = env.step(possible_states[action])
+            state_index, state = descretize_state(new_state, possible_states)
             total_reward += reward * math.pow(gamma, step_idx)
+            step_idx += 1
             if done:
                 break
         return total_reward
@@ -94,8 +101,15 @@ def test_policy(env, Q, gamma, n=100):
     return np.mean(scores)
 
 
-max_steps = [1e10]
-max_iters = [1e10]
+def get_policy(Q):
+    policy = []
+    for s in range(len(possible_states)):
+        policy.append(np.argmax(Q[s, :]))
+    return policy
+
+
+max_steps = [1e3, 1e5, 1e10]
+max_iters = [1e3, 1e5, 1e10]
 gammas = [0.1, 0.6, 0.9]
 learning_rates = [0.1, 0.5, 0.9]
 hyperparameters = list(itertools.product(max_steps, max_iters, gammas, learning_rates))

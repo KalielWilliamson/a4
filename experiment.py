@@ -12,13 +12,12 @@ if __name__ == '__main__':
     # delete artifacts directory
 
     # create artifacts folder with subfolders
-    os.mkdir('artifacts')
-    os.mkdir('artifacts/pendulum_policy_iteration')
-    os.mkdir('artifacts/pendulum_q_learning')
-    os.mkdir('artifacts/pendulum_value_iteration')
-    os.mkdir('artifacts/frozen_lake_policy_iteration')
-    os.mkdir('artifacts/frozen_lake_q_learning')
-    os.mkdir('artifacts/frozen_lake_value_iteration')
+    os.makedirs('artifacts/pendulum_policy_iteration',  exist_ok=True)
+    os.makedirs('artifacts/pendulum_q_learning',  exist_ok=True)
+    os.makedirs('artifacts/pendulum_value_iteration', exist_ok=True)
+    os.makedirs('artifacts/frozen_lake_policy_iteration', exist_ok=True)
+    os.makedirs('artifacts/frozen_lake_q_learning', exist_ok=True)
+    os.makedirs('artifacts/frozen_lake_value_iteration', exist_ok=True)
 
     # use multiprocessing to run experiments
     num_cpu = multiprocessing.cpu_count()
